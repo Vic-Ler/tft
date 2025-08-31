@@ -49,6 +49,14 @@ summoner_data <- fetch_data(paste0("https://",
 puuid <- summoner_data$puuid
 
 #################
+cli::cli_alert_info("Fetching Summoner Profile...")
+
+summoner_data <- fetch_data(paste0("https://",
+                                   sub_region,
+                                   ".api.riotgames.com/tft/summoner/v1/summoners/by-puuid/",
+                                   puuid),
+                            api_key)
+#################
 cli::cli_alert_info("Fetching TFT League Data...")
 
 tft_overview_data <- fetch_data(paste0("https://", sub_region,
