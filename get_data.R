@@ -51,7 +51,7 @@ puuid <- summoner_data$puuid
 #################
 cli::cli_alert_info("Fetching Summoner Profile...")
 
-summoner_data <- fetch_data(paste0("https://",
+summoner_profile <- fetch_data(paste0("https://",
                                    sub_region,
                                    ".api.riotgames.com/tft/summoner/v1/summoners/by-puuid/",
                                    puuid),
@@ -88,3 +88,7 @@ for (i in match_ids) {
   match_data <- cbind(match_overview, match_participants)
   match_details <- bind_rows(match_details, match_data)
 }
+#################
+cli::cli_alert_info("Fetching Icon Data...")
+version_url <- "https://ddragon.leagueoflegends.com/api/versions.json"
+latest_version <- jsonlite::fromJSON(version_url)[1]
