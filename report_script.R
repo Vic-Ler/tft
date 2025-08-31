@@ -18,7 +18,7 @@ library(glue)
 
 ### PARAMETERS ###
 api_key = Sys.getenv("RIOT_API")
-summoner_name = "LivingWeapon" 
+summoner_name = "Catoria" 
 region = "europe"
 sub_region = "euw1"
 tagline = "EUW"
@@ -102,8 +102,6 @@ overview_games_tbl <- overview_games %>%
     highlight = TRUE
   )
 
-card_01 <- card(overview_games_tbl)
-
 ### TIME SPENT OVERVIEW ###
 time_plot <- overview_games %>%
   mutate(game_date = as_date(game_datetime)) %>%
@@ -143,7 +141,6 @@ time_plot <- overview_games %>%
     margin = list(t = 50)
   )
 
-card_02 <- card(time_plot)
 ### INLINE BAR PLOT FUNCTION ###
 inline_game_bar <- function(total_games, top4_wins, max) {
   # Create a vector of x positions, one for each game
@@ -395,20 +392,50 @@ item_tbl <- reactable(
 
 ########################################## LAYOUT
 
-layout <- fluidPage(navset_tab(
-  nav_panel(title = "Overview", p("Summoner Overview"),
-            layout_column_wrap(
-              width = "200px", height = 200,
-              value_box_01, value_box_02, value_box_03),
-            card_01),
-  nav_panel(title = "Details", p("TFT performance details"),
-            layout_column_wrap(
-              width = NULL, height = 200, fill = FALSE,
-              style = css(grid_template_columns = "1fr 4fr"),
-              value_box_04, card_02),
-            card_03, 
-            card_04, 
-            card_05)))
-
-
+ui <- fluidPage(
+  style = "height: 100vh;",  # full viewport height
+  
+  layout_column_wrap(
+    width = NULL,
+    height = "100%",           # fixed height
+    style = css(grid_template_columns = "1fr 3fr"),  # left ~1/4, right ~3/4
+    
+    # --- Left column (1/4) with fixed stacked value boxes ---
+    layout_column_wrap(
+      width = "100%",
+      height = "100%",          # fill the left column
+      style = css(grid_template_rows = "1fr 1fr", gap = "10px"),
+      card(value_box_summoner),
+      card(value_box_player_stats)
+    ),
+    
+    # --- Right column (3/4) with navset ---
+    div(
+      style = "height: 100%; overflow-y: auto;",  # scrollable if content too tall
+      navset_tab(
+        nav_panel(
+          title = "Player History",
+          card(overview_games_tbl)
+        ),
+        nav_panel(
+          title = "Game Time",
+          card(time_plot)
+        ),
+        nav_panel(
+          title = "Trait Details",
+          card(trait_tbl)
+        ),
+        nav_panel(
+          title = "Unit Details",
+          card(unit_tbl)
+        ),
+        nav_panel(
+          title = "Item Details",
+          card(item_tbl)
+        )
+      )
+    )
+  )
+)
+browsable(ui)
 save_html(layout, file = "C:/Users/Lenovo/Desktop/tft/tft_stats_vic.html")
