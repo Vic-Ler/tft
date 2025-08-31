@@ -183,17 +183,21 @@ inline_game_bar <- function(total_games, top4_wins, max) {
 }
 ### COMMON TRAITS ###
 common_traits <- match_details %>% 
-  select(gameId, traits) %>%
+  select(gameId, placement, traits) %>%
   unnest(cols = traits) %>%
+  mutate(top4 = placement <= 4) %>%
   group_by(name) %>%
-  summarise(count = n_distinct(gameId), .groups = "drop") %>%
-  arrange(desc(count)) %>%
+  summarise(
+    total_games = n_distinct(gameId),
+    top4_wins = sum(top4),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(total_games)) %>%
   mutate(
     clean_name = sub(".*_(.*)", "\\1", name),
     trait_icon_link = paste0("https://cdn.metatft.com/file/metatft/traits/",
                              tolower(clean_name),
                              ".png"),
-    # Wrap both circle and text in a single flex container
     trait_icon = paste0(
       '<div style="display:flex; align-items:center;">',
       '<div style="width:40px; height:40px; background-color:black; border-radius:50%; display:flex; justify-content:center; align-items:center;">',
@@ -201,9 +205,10 @@ common_traits <- match_details %>%
       '</div>',
       '<span style="margin-left:8px;">', clean_name, '</span>',
       '</div>'
-    )
+    ),
+    win_rate = round(top4_wins / total_games * 100, 1)
   ) %>% 
-  select(trait_icon, count)
+  select(trait_icon, win_rate, total_games, top4_wins)
 
 # Display in reactable
 trait_tbl <- reactable(
@@ -217,18 +222,32 @@ trait_tbl <- reactable(
       align = "left",                 
       headerStyle = list(textAlign = "left")  
     ),  
-    count = colDef(
+    win_rate = colDef(
+      name = "Win Rate",
+      align = "left",
+      headerStyle = list(textAlign = "left"),
+      cell = function(value) paste0(value, "%")
+    ),
+    total_games = colDef(
       name = "Game Count",
       align = "left",                  
       headerStyle = list(textAlign = "left"),
-      cell = function(value) {
-        plot <- inline_game_bar(value) |> 
-          plotly::config(displayModeBar = FALSE)
+      cell = function(value, index) {
+        row <- common_traits[index, ]
+        plot <- inline_game_bar(
+          row$total_games,
+          row$top4_wins,
+          max(common_traits$total_games, na.rm = TRUE)
+        ) %>% plotly::config(displayModeBar = FALSE)
+        
         htmltools::tags$div(
-          style = "width: 150px; display: flex; align-items: center;", 
-          plot
-        )}
-    )))
+          style = "width: 150px; display: flex; align-items: center;", plot
+        )
+      }
+    ),
+    top4_wins = colDef(show = FALSE)
+  )
+)
 
 ### COMMON UNITS ###
 common_units <- match_details %>% 
@@ -297,30 +316,43 @@ unit_tbl <- reactable(
 )
 ### COMMON ITEMS ###
 common_items <- match_details %>% 
-  select(gameId, units) %>%
+  select(gameId, placement, units) %>%
   unnest(cols = units) %>%
   mutate(itemNames = map_chr(itemNames, ~ ifelse(is.list(.), paste(unlist(.), collapse = ", "), .))) %>%
   unnest(cols = itemNames) %>% 
   filter(!is.na(itemNames)) %>%
   filter(!grepl("Core", itemNames, ignore.case = TRUE)) %>%
+  mutate(top4 = placement <= 4) %>%
+  group_by(itemNames, gameId) %>% 
+  summarise(
+    top4_game = any(top4),   # 1 wenn dieses Spiel mit dem Item ein Top4 war
+    .groups = "drop"
+  ) %>%
   group_by(itemNames) %>%
-  summarise(count = n_distinct(gameId)) %>%
-  arrange(desc(count)) %>%
-  mutate(item_icon_link = paste0(
-    "https://cdn.metatft.com/cdn-cgi/image/width=48,height=48,format=auto/https://cdn.metatft.com/file/metatft/items/",
-    tolower(itemNames),
-    ".png"),
-         clean_names = sub(".*_(.*)", "\\1", itemNames),
-         item_icon = paste0(
-           '<div style="display:flex; align-items:center;">',
-           '<div style="width:40px; height:40px; display:flex; justify-content:center; align-items:center;">',
-           '<img src="', item_icon_link, '" height="24">',
-           '</div>',
-           '<span style="margin-left:8px;">', clean_names, '</span>',
-           '</div>'
-         )
+  summarise(
+    total_games = n(),       # Anzahl distinct games
+    top4_wins   = sum(top4_game),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(total_games)) %>%
+  mutate(
+    item_icon_link = paste0(
+      "https://cdn.metatft.com/cdn-cgi/image/width=48,height=48,format=auto/https://cdn.metatft.com/file/metatft/items/",
+      tolower(itemNames),
+      ".png"
+    ),
+    clean_names = sub(".*_(.*)", "\\1", itemNames),
+    item_icon = paste0(
+      '<div style="display:flex; align-items:center;">',
+      '<div style="width:40px; height:40px; display:flex; justify-content:center; align-items:center;">',
+      '<img src="', item_icon_link, '" height="24">',
+      '</div>',
+      '<span style="margin-left:8px;">', clean_names, '</span>',
+      '</div>'
+    ),
+    win_rate = round(top4_wins / total_games * 100, 1)
   ) %>% 
-  select(item_icon, count)
+  select(item_icon, win_rate, total_games, top4_wins)
 
 item_tbl <- reactable(
   common_items,
@@ -333,109 +365,33 @@ item_tbl <- reactable(
       align = "left",                 
       headerStyle = list(textAlign = "left")  
     ),  
-    count = colDef(
+    win_rate = colDef(
+      name = "Win Rate",
+      align = "left",
+      headerStyle = list(textAlign = "left"),
+      cell = function(value) paste0(value, "%")
+    ),
+    total_games = colDef(
       name = "Game Count",
       align = "left",                  
       headerStyle = list(textAlign = "left"),
-      cell = function(value) {
-        plot <- inline_game_bar(value) |> 
-          plotly::config(displayModeBar = FALSE)
+      cell = function(value, index) {
+        row <- common_items[index, ]
+        plot <- inline_game_bar(
+          row$total_games,
+          row$top4_wins,
+          max(common_items$total_games, na.rm = TRUE)
+        ) %>% plotly::config(displayModeBar = FALSE)
+        
         htmltools::tags$div(
           style = "width: 150px; display: flex; align-items: center;", 
           plot
-        )}
-    )))
-
-### CHAMPION WIN RATES ###
-champ_plot <- match_details %>%
-  mutate(win = as.factor(win)) %>%
-  select(gameId, win, units) %>%
-  unnest(cols = units) %>%
-  mutate(character_id = sub(".*_(.*)", "\\1", character_id)) %>%
-  select(gameId, win, character_id) %>%
-  group_by(character_id, win) %>%
-  summarise(count = n_distinct(gameId)) %>%
-  pivot_wider(names_from = win, values_from = count) %>%
-  mutate(across(everything(), ~ if_else(is.na(.), 0, .))) %>%
-  mutate(total = `FALSE` + `TRUE`) %>%
-  mutate(win_rate = `TRUE`/total) %>%
-  filter(win_rate != 0) %>%
-  arrange(desc(win_rate)) %>%
-  mutate(character_id = factor(character_id, levels = .$character_id[order(-.$win_rate)])) %>%
-  plot_ly(x = ~character_id, y = ~win_rate, type = "bar",
-          marker = list(color = ~win_rate, colorscale = 'Greens', reversescale = TRUE)) %>%
-  layout(xaxis = list(title = "Champion"),
-         yaxis = list(title = "Win rate"))
-match_details %>%
-  select(gameId, placement, units) %>%
-  unnest(cols = units) %>%
-  mutate(character_id = sub(".*_(.*)", "\\1", character_id),
-         top4 = if_else(placement <= 4, TRUE, FALSE)) %>%
-  group_by(character_id, top4) %>%
-  summarise(count = n_distinct(gameId), .groups = "drop") %>%
-  pivot_wider(names_from = top4, values_from = count, values_fill = 0) %>%
-  mutate(total = `FALSE` + `TRUE`,
-         win_rate = round(`TRUE` / total * 100, 1)) %>%
-  arrange(desc(win_rate)) %>%
-  mutate(character_id = factor(character_id, levels = character_id)) %>%
-  plot_ly(x = ~character_id, y = ~`FALSE`, type = "bar", name = "Placement > 4",
-          marker = list(color = "lightgray")) %>%
-  add_trace(y = ~`TRUE`, name = "Top 4 Finish", marker = list(color = "steelblue"),
-            text = ~paste0(win_rate, "%"), textposition = "inside") %>%
-  layout(barmode = "stack",
-         xaxis = list(title = "Champion", tickangle = -45),
-         yaxis = list(title = "Number of Games"),
-         legend = list(title = list(text = "Result")))
-card_03 <- card(champ_plot)
-
-### TRAITS WIN RATES ###
-traits_plot <- match_details %>%
-  mutate(win = as.factor(win)) %>%
-  select(gameId, win, traits) %>%
-  unnest(cols = traits) %>%
-  mutate(name = sub(".*_(.*)", "\\1", name)) %>%
-  select(gameId, win, name) %>%
-  group_by(name, win) %>%
-  summarise(count = n_distinct(gameId)) %>%
-  pivot_wider(names_from = win, values_from = count) %>%
-  mutate(across(everything(), ~ if_else(is.na(.), 0, .))) %>%
-  mutate(total = `FALSE` + `TRUE`) %>%
-  mutate(win_rate = `TRUE`/total) %>%
-  filter(win_rate != 0) %>%
-  arrange(desc(win_rate)) %>%
-  mutate(name = factor(name, levels = .$name[order(-.$win_rate)])) %>%
-  plot_ly(x = ~name, y = ~win_rate, type = "bar",
-          marker = list(color = ~win_rate, colorscale = 'Greens', reversescale = TRUE)) %>%
-  layout(xaxis = list(title = "Trait"),
-         yaxis = list(title = "Win rate"))
-
-card_04 <- card(traits_plot)
-
-### ITEMS WIN RATE ###
-items_plot <- match_details %>%
-  mutate(win = as.factor(win)) %>%
-  select(gameId, win, units) %>%
-  unnest(cols = units) %>%
-  mutate(itemNames = map_chr(itemNames, ~ ifelse(is.list(.), paste(unlist(.), collapse = ", "), .))) %>%
-  unnest(cols = itemNames) %>% 
-  filter(!is.na(itemNames) & itemNames != "") %>%
-  mutate(itemNames = sub(".*_(.*)", "\\1", itemNames)) %>%
-  select(gameId, win, itemNames) %>%
-  group_by(itemNames, win) %>%
-  summarise(count = n_distinct(gameId)) %>%
-  pivot_wider(names_from = win, values_from = count) %>%
-  mutate(across(everything(), ~ if_else(is.na(.), 0, .))) %>%
-  mutate(total = `FALSE` + `TRUE`) %>%
-  mutate(win_rate = `TRUE`/total) %>%
-  filter(win_rate != 0) %>%
-  arrange(desc(win_rate)) %>%
-  mutate(itemNames = factor(itemNames, levels = .$itemNames[order(-.$win_rate)])) %>%
-  plot_ly(x = ~itemNames, y = ~win_rate, type = "bar",
-          marker = list(color = ~win_rate, colorscale = 'Greens', reversescale = TRUE)) %>%
-  layout(xaxis = list(title = "Item"),
-         yaxis = list(title = "Win rate"))
-
-card_05 <- card(items_plot)
+        )
+      }
+    ),
+    top4_wins = colDef(show = FALSE)
+  )
+)
 
 ########################################## LAYOUT
 
