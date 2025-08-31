@@ -15,7 +15,7 @@ library(here)
 library(cli)
 
 ### PARAMETERS ###
-api_key = "RGAPI-465f712d-4b89-4445-8805-db3341774632"
+api_key = Sys.getenv("RIOT_API")
 summoner_name = "LivingWeapon" 
 region = "europe"
 sub_region = "euw1"
