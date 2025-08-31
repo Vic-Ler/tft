@@ -145,30 +145,41 @@ time_plot <- overview_games %>%
 
 card_02 <- card(time_plot)
 ### INLINE BAR PLOT FUNCTION ###
-inline_game_bar <- function(count) {
+inline_game_bar <- function(total_games, top4_wins, max) {
   # Create a vector of x positions, one for each game
-  x_positions <- seq_len(count)
+  x_positions <- seq_len(total_games)
   
-  p <- plot_ly(
+  # Colors: green for wins, red for losses
+  dot_colors <- c(rep("green", top4_wins), rep("red", total_games - top4_wins))
+  
+  plot_ly(
     x = x_positions,
-    y = rep(1, count),      # all dots on the same row
+    y = rep(1, total_games),   # all dots on the same row
     type = 'scatter',
     mode = 'markers',
     marker = list(
-      color = "black",
-      size = 8               # size of each dot
+      color = dot_colors,
+      size = 8
     ),
     hoverinfo = "text",
-    hovertext = paste0(count, " games")
+    hovertext = paste0(top4_wins, "/", total_games, 
+                       " top 4 (", round(top4_wins/total_games*100, 1), "%)")
   ) %>%
     layout(
-      xaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE, range = c(0, max_count + 1)),
-      yaxis = list(showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE),
+      xaxis = list(
+        showgrid = FALSE,
+        showticklabels = FALSE,
+        zeroline = FALSE,
+        range = c(0, max + 1)  # use global max for consistent spacing
+      ),
+      yaxis = list(
+        showgrid = FALSE,
+        showticklabels = FALSE,
+        zeroline = FALSE
+      ),
       margin = list(l = 0, r = 0, t = 0, b = 0),
       height = 20
     )
-  
-  p
 }
 ### COMMON TRAITS ###
 common_traits <- match_details %>% 
@@ -221,16 +232,23 @@ trait_tbl <- reactable(
 
 ### COMMON UNITS ###
 common_units <- match_details %>% 
-  select(gameId, units) %>%
+  select(gameId, placement, units) %>%
   unnest(cols = units) %>%
+  mutate(
+    top4 = placement <= 4
+  ) %>%
   group_by(character_id) %>%
-  summarise(count = n_distinct(gameId), .groups = "drop") %>%
-  arrange(desc(count)) %>%
-  mutate(character_icon_link = paste0("https://cdn.metatft.com/cdn-cgi/image/width=48,height=48,format=auto/https://cdn.metatft.com/file/metatft/champions/",
-                             tolower(character_id),
-                             ".png"),
-         clean_name = sub(".*_(.*)", "\\1", character_id),
-    # Wrap both circle and text in a single flex container
+  summarise(
+    total_games = n_distinct(gameId),
+    top4_wins = sum(top4),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    win_rate = round(top4_wins / total_games * 100, 1),
+    character_icon_link = paste0("https://cdn.metatft.com/cdn-cgi/image/width=48,height=48,format=auto/https://cdn.metatft.com/file/metatft/champions/",
+                                 tolower(character_id),
+                                 ".png"),
+    clean_name = sub(".*_(.*)", "\\1", character_id),
     character_icon = paste0(
       '<div style="display:flex; align-items:center;">',
       '<div style="width:40px; height:40px; display:flex; justify-content:center; align-items:center;">',
@@ -240,67 +258,44 @@ common_units <- match_details %>%
       '</div>'
     )
   ) %>% 
-  select(character_icon, count)
+  select(character_icon, win_rate, total_games, top4_wins)
+
 
 unit_tbl <- reactable(
   common_units,
-  pagination = FALSE,   
+  pagination = FALSE,
   rowStyle = list(height = "45px"),
   columns = list(
     character_icon = colDef(
       name = "Unit",
       html = TRUE,
-      align = "left",                 
-      headerStyle = list(textAlign = "left")  
-    ),  
-    count = colDef(
-      name = "Game Count",
-      align = "left",                  
+      align = "left",
+      headerStyle = list(textAlign = "left")
+    ),
+    win_rate = colDef(
+      name = "Win Rate",
+      align = "left",
       headerStyle = list(textAlign = "left"),
-      cell = function(value) {
-        plot <- inline_game_bar(value) |> 
+      cell = function(value) paste0(value, "%")
+    ),
+    total_games = colDef(
+      name = "Games Played",
+      align = "left",
+      headerStyle = list(textAlign = "left"),
+      cell = function(value, index) {
+        row <- common_units[index, ]
+        plot <- inline_game_bar(row$total_games, row$top4_wins, max(common_units$total_games, na.rm = TRUE)) %>%
           plotly::config(displayModeBar = FALSE)
         htmltools::tags$div(
-          style = "width: 150px; display: flex; align-items: center;", 
+          style = "width: 150px; display: flex; align-items: center;",
           plot
-        )}
-    )))
-### COMMON ITEMS ###
-get_item_icon_link <- function(item_name, max_season = 15) {
-  # 1. tft_item_<name>.png (no number)
-  urls <- c(
-    paste0(
-      "https://cdn.metatft.com/cdn-cgi/image/width=48,height=48,format=auto/https://cdn.metatft.com/file/metatft/items/tft_item_",
-      tolower(item_name),
-      ".png"
+        )
+      }
     ),
-    # 2. tft1 -> tft15
-    paste0(
-      "https://cdn.metatft.com/cdn-cgi/image/width=48,height=48,format=auto/https://cdn.metatft.com/file/metatft/items/tft",
-      1:max_season,
-      "_item_",
-      tolower(item_name),
-      ".png"
-    ),
-    # 3. Teamfight.lol TFTSet15 link
-    paste0(
-      "https://www.teamfight.lol/_ipx/_/https://cdn.teamfight.lol/tft/item/TFTSet15/TFT_Item_Artifact_",
-      item_name,
-      ".png"
-    )
+    top4_wins = colDef(show = FALSE)
   )
-  
-  # Loop through URLs and return the first valid one
-  for (url in urls) {
-    res <- HEAD(url)
-    if (res$status_code == 200) {
-      return(url)
-    }
-  }
-  
-  return(NA_character_)  # fallback if none found
-}
-
+)
+### COMMON ITEMS ###
 common_items <- match_details %>% 
   select(gameId, units) %>%
   unnest(cols = units) %>%
@@ -311,15 +306,17 @@ common_items <- match_details %>%
   group_by(itemNames) %>%
   summarise(count = n_distinct(gameId)) %>%
   arrange(desc(count)) %>%
-  mutate(itemNames = sub(".*_(.*)", "\\1", itemNames),
-         item_icon_link = purrr::map_chr(itemNames, get_item_icon_link),
-         # Wrap both circle and text in a single flex container
+  mutate(item_icon_link = paste0(
+    "https://cdn.metatft.com/cdn-cgi/image/width=48,height=48,format=auto/https://cdn.metatft.com/file/metatft/items/",
+    tolower(itemNames),
+    ".png"),
+         clean_names = sub(".*_(.*)", "\\1", itemNames),
          item_icon = paste0(
            '<div style="display:flex; align-items:center;">',
            '<div style="width:40px; height:40px; display:flex; justify-content:center; align-items:center;">',
            '<img src="', item_icon_link, '" height="24">',
            '</div>',
-           '<span style="margin-left:8px;">', itemNames, '</span>',
+           '<span style="margin-left:8px;">', clean_names, '</span>',
            '</div>'
          )
   ) %>% 
@@ -369,7 +366,26 @@ champ_plot <- match_details %>%
           marker = list(color = ~win_rate, colorscale = 'Greens', reversescale = TRUE)) %>%
   layout(xaxis = list(title = "Champion"),
          yaxis = list(title = "Win rate"))
-
+match_details %>%
+  select(gameId, placement, units) %>%
+  unnest(cols = units) %>%
+  mutate(character_id = sub(".*_(.*)", "\\1", character_id),
+         top4 = if_else(placement <= 4, TRUE, FALSE)) %>%
+  group_by(character_id, top4) %>%
+  summarise(count = n_distinct(gameId), .groups = "drop") %>%
+  pivot_wider(names_from = top4, values_from = count, values_fill = 0) %>%
+  mutate(total = `FALSE` + `TRUE`,
+         win_rate = round(`TRUE` / total * 100, 1)) %>%
+  arrange(desc(win_rate)) %>%
+  mutate(character_id = factor(character_id, levels = character_id)) %>%
+  plot_ly(x = ~character_id, y = ~`FALSE`, type = "bar", name = "Placement > 4",
+          marker = list(color = "lightgray")) %>%
+  add_trace(y = ~`TRUE`, name = "Top 4 Finish", marker = list(color = "steelblue"),
+            text = ~paste0(win_rate, "%"), textposition = "inside") %>%
+  layout(barmode = "stack",
+         xaxis = list(title = "Champion", tickangle = -45),
+         yaxis = list(title = "Number of Games"),
+         legend = list(title = list(text = "Result")))
 card_03 <- card(champ_plot)
 
 ### TRAITS WIN RATES ###
