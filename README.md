@@ -31,3 +31,8 @@ It's more of a personal playground for experimenting with data visualization and
   - [ddragon.leagueoflegends.com](https://ddragon.leagueoflegends.com)  
   - [raw.communitydragon.org](https://raw.communitydragon.org)  
   - [MetaTFT CDN](https://cdn.metatft.com/file/metatft)  
+
+## ⚠️ Limits & Notes
+
+- The dashboard **works best on desktop** and is **not fully optimized for mobile layouts**.  
+- The data fetched is **correct**, but some statistics (like win rates) can be **less meaningful** if only a small number of matches are available.
