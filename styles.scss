@@ -2,14 +2,19 @@
 $panel-bg: rgba(0, 0, 0, 0.5);
 $text-color: #ffffff;
 
-// Body with gradient background
 body {
   background: linear-gradient(135deg, #0000ff, #000000);
   color: $text-color;
   font-family: Arial, sans-serif;
   margin: 0;
-  padding: 0;
-  min-height: 100vh;
+  padding: 1rem;
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%; 
 }
 
 .semi-transparent {
@@ -18,55 +23,8 @@ body {
   padding: 10px;
   margin-bottom: 10px;
   color: $text-color;
-}
-
-#dashboard-container {
-  display: flex;
-  width: 100%;
-  height: 100vh;
-  gap: 10px;
-  padding: 10px;   // small padding inside container
-  box-sizing: border-box;  // include padding in width/height
-}
-
-.left-column {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex: 0 0 25%;
-  height: 100%;
-
-  > .card {
-    flex: 1;
-  }
-}
-
-.right-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-  #dashboard-container {
-    flex-direction: column;
-    height: auto;
-  }
-
-  .left-column,
-  .right-column {
-    flex: none;
-    width: 100%;
-    height: auto;
-  }
-
-  .left-column > .card {
-    flex: none;
-    width: 100%;
-    height: auto;
-  }
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+  font-size: 0.9rem; 
 }
 
 .transparent {
@@ -98,22 +56,25 @@ body {
 
 .reactable select option {
   background: #000000;    
-  color: #0000ff;
+  color: #ffffff;
 }
 
 // PILL BUTTON NAVIGATION
 .nav-pills .nav-link {
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgba(0, 0, 0, 0.2);
   color: #ffffff;
   border-radius: 50px;                     
   margin-right: 5px;
   margin-bottom: 20px;
   font-weight: bold;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.2); 
+  transition: box-shadow 0.3s ease; 
 }
 
 .nav-pills .nav-link.active {
   background-color: $panel-bg;            
   color: #ffffff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3); 
 }
 
 // BADGES
