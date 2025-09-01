@@ -525,8 +525,6 @@ ui <- page(
   )
 
 # Save to HTML
-save_html(ui, file = paste0(
-  "C:/Users/Lenovo/Documents/tft/tft_stats_",
-  summoner_name,
-  ".html"
-))
+save_html(ui, file = here(
+  paste0(summoner_name, ".html")
+  ))  
