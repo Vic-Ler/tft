@@ -36,3 +36,4 @@ It's more of a personal playground for experimenting with data visualization and
 
 - The dashboard **works best on desktop** and is **not fully optimized for mobile layouts**.  
 - The data fetched is **correct**, but some statistics (like win rates) can be **less meaningful** if only a small number of matches are available.
+- **Lib folder is needed** to display the dashboard correctly. It is usually generated automatically upon rendering the HTML file. 
