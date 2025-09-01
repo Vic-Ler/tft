@@ -1,0 +1,38 @@
+// GENERAL PAGE 
+$panel-bg: rgba(0, 0, 0, 0.7);
+$text-color: #ffffff;
+
+// Body with gradient background
+body {
+  background: linear-gradient(135deg, #0000ff, #800080, #000000);
+  color: $text-color;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+// BADGES
+$badge-padding: 5px 20px;
+$badge-radius: 12px;
+$badge-color: white;
+$badge-padding: 5px 20px;
+$badge-radius: 12px;
+
+.placement-badge {
+  display: inline-block;
+  padding: $badge-padding;
+  border-radius: $badge-radius;
+  color: $badge-color;
+  font-weight: bold;
+}
+
+.damage-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  text-align: center;
+}
+
