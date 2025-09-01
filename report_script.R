@@ -58,7 +58,7 @@ value_box_summoner <- value_box(
                                    "/img/profileicon/",
                                    summoner_profile$profileIconId,
                                    ".png"),
-                      height = "50px"),
+                      height = "70px"),
   theme = "gray",
   p(paste0("Region: ", region, " / ", sub_region))
 )
@@ -73,7 +73,7 @@ value_box_player_stats <- value_box(
   showcase = tags$img(src = sprintf(
     "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-%s.png",
     tolower(tft_overview_data$tier)), 
-    height = "100px"),
+    height = "200px"),
   theme = "gray",
   p(paste0("League Points: ", 
            tft_overview_data$leaguePoints)), 
@@ -496,37 +496,37 @@ ui <- page(
   ) |> bs_add_rules(sass::sass_file("styles.scss")),
   div(
     id = "dashboard-container",
-    layout_columns(
-      col_widths = c(3, 9),
-      style = "width: 100%; height: 1200px;",  
-      
-      # Left column
-      div(
-        class = "left-column",  
-        card(class = "semi-transparent", 
-             value_box_summoner),
-        card(class = "semi-transparent", 
-             value_box_player_stats)
+    style = "display: flex; width: 100%; height: calc(100vh - 2rem); gap: 1rem;",  
+    div(
+      style = "flex: 0 0 25%; display: flex; flex-direction: column; gap: 1rem;",
+      card(
+        class = "semi-transparent",
+        style = "flex: 1;",
+        value_box_summoner
       ),
-      
-      # Right column wrapper
-      div(
-        class = "right-column",
-        style = "height: 100%;",
-        navset_pill(
-          nav_panel(title = "Player History", 
-                    card(class = "transparent", overview_games_tbl)),
-          nav_panel(title = "Game Time", 
-                    card(class = "transparent", time_plot)),
-          nav_panel(title = "Trait Details", 
-                    card(class = "transparent", trait_tbl)),
-          nav_panel(title = "Unit Details", 
-                    card(class = "transparent", unit_tbl)),
-          nav_panel(title = "Item Details", 
-                    card(class = "transparent", item_tbl))
-        )))))
+      card(
+        class = "semi-transparent",
+        style = "flex: 1;",
+        value_box_player_stats
+      )
+    ),
+    # RIGHT COLUMN
+    div(
+      style = "flex: 0 0 75%; display: flex; flex-direction: column; overflow: auto;",
+      navset_pill(
+        nav_panel("Player History", card(class = "transparent", overview_games_tbl)),
+        nav_panel("Game Time",      card(class = "transparent", time_plot)),
+        nav_panel("Trait Details",  card(class = "transparent", trait_tbl)),
+        nav_panel("Unit Details",   card(class = "transparent", unit_tbl)),
+        nav_panel("Item Details",   card(class = "transparent", item_tbl))
+        )
+      )
+    )
+  )
 
-save_html(layout, file = paste0(
-  "C:/Users/Lenovo/Desktop/tft/tft_stats_",
+# Save to HTML
+save_html(ui, file = paste0(
+  "C:/Users/Lenovo/Documents/tft/tft_stats_",
   summoner_name,
-  ".html"))
+  ".html"
+))
