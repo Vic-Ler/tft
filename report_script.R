@@ -32,6 +32,17 @@ source(here("get_data.R"))
 tft_overview_data <- tft_overview_data %>% 
   filter(queueType == game_type)
 
+### DROPDOWN FUNCTION ###
+dropdown_function <- function(tableId) {
+  function(values, name) {
+    tags$select(
+      onchange = sprintf("Reactable.setFilter('%s', '%s', event.target.value || undefined)", tableId, name),
+      tags$option(value = "", "All"),
+      lapply(sort(unique(values)), tags$option),
+      "aria-label" = sprintf("Filter %s", name),
+      style = "width: 100%; height: 100%; border: 1px solid #E3E3E3; border-radius: 3px;"
+    )}}
+
 ### SUMMONER OVERVIEW ###
 value_box_summoner <- value_box(
   title = "Summoner",
@@ -113,19 +124,25 @@ overview_games_tbl <- overview_games %>%
       game_datetime = colDef("Date"),
       time_eliminated = colDef("Elimination Time"),
       placement = colDef("Placement", 
+                         filterInput = dropdown_function("match_history"),
                          cell = function(value) color_placement(value),
                          align = "center"),
-      players_eliminated = colDef("Players Eliminated"),
+      players_eliminated = colDef("Players Eliminated", 
+                                  filterInput = dropdown_function("match_history")),
       total_damage_to_players = colDef("Total Damage", 
                                        cell = function(value) damage_badge(value),
                                        align = "center"),
       last_round = colDef("Last Round"),
-      level = colDef("Level reached"), 
+      level = colDef("Level reached",
+                     filterInput = dropdown_function("match_history")), 
       gold_left = colDef("Gold left")
     ), 
     compact = TRUE, 
     bordered = TRUE, 
-    highlight = TRUE
+    highlight = TRUE,
+    sortable = TRUE,
+    filterable = TRUE,
+    elementId = "match_history"
   )
 
 ### TIME SPENT OVERVIEW ###
@@ -242,7 +259,6 @@ common_traits <- match_details %>%
 # Display in reactable
 trait_tbl <- reactable(
   common_traits,
-  pagination = FALSE,   
   rowStyle = list(height = "45px"),
   columns = list(
     trait_icon = colDef(
@@ -275,7 +291,12 @@ trait_tbl <- reactable(
       }
     ),
     top4_wins = colDef(show = FALSE)
-  )
+  ),
+  compact = TRUE, 
+  bordered = TRUE, 
+  highlight = TRUE,
+  sortable = TRUE,
+  filterable = TRUE
 )
 
 ### COMMON UNITS ###
@@ -311,7 +332,6 @@ common_units <- match_details %>%
 
 unit_tbl <- reactable(
   common_units,
-  pagination = FALSE,
   rowStyle = list(height = "45px"),
   columns = list(
     character_icon = colDef(
@@ -341,7 +361,12 @@ unit_tbl <- reactable(
       }
     ),
     top4_wins = colDef(show = FALSE)
-  )
+  ),
+  compact = TRUE, 
+  bordered = TRUE, 
+  highlight = TRUE,
+  sortable = TRUE,
+  filterable = TRUE
 )
 ### COMMON ITEMS ###
 common_items <- match_details %>% 
@@ -419,7 +444,12 @@ item_tbl <- reactable(
       }
     ),
     top4_wins = colDef(show = FALSE)
-  )
+  ),
+  compact = TRUE, 
+  bordered = TRUE, 
+  highlight = TRUE,
+  sortable = TRUE,
+  filterable = TRUE
 )
 
 ########################################## LAYOUT
@@ -448,7 +478,7 @@ ui <- layout_columns(
   
   # SCSS reference
   tags$head(
-    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
+    tags$link(rel = "stylesheet", type = "text/scss", href = "styles.scss")
   )
 )
 
