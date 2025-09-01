@@ -18,7 +18,7 @@ library(glue)
 
 ### PARAMETERS ###
 api_key = Sys.getenv("RIOT_API")
-summoner_name = "Catoria" 
+summoner_name = "Bron_Nashor" 
 region = "europe"
 sub_region = "euw1"
 tagline = "EUW"
@@ -26,6 +26,7 @@ game_type = "RANKED_TFT"
 
 ### LOAD DATA ###
 source(here("get_data.R"))
+tft_overview_data <- tft_overview_data %>% filter(queueType == "RANKED_TFT")
 
 ### SUMMONER OVERVIEW ###
 value_box_summoner <- value_box(
@@ -143,31 +144,37 @@ time_plot <- overview_games %>%
 
 ### INLINE BAR PLOT FUNCTION ###
 inline_game_bar <- function(total_games, top4_wins, max) {
-  # Create a vector of x positions, one for each game
+  total_games <- as.integer(total_games[[1]])
+  top4_wins   <- as.integer(top4_wins[[1]])
+  
+  losses <- total_games - top4_wins
+  if (is.na(losses) || losses < 0) losses <- 0
+  
   x_positions <- seq_len(total_games)
   
-  # Colors: green for wins, red for losses
-  dot_colors <- c(rep("green", top4_wins), rep("red", total_games - top4_wins))
+  dot_colors <- c(
+    rep("green", top4_wins),
+    rep("red",   losses)
+  )
   
   plot_ly(
     x = x_positions,
-    y = rep(1, total_games),   # all dots on the same row
-    type = 'scatter',
-    mode = 'markers',
-    marker = list(
-      color = dot_colors,
-      size = 8
-    ),
+    y = rep(1, total_games),
+    type = "scatter",
+    mode = "markers",
+    marker = list(color = dot_colors, size = 8),
     hoverinfo = "text",
-    hovertext = paste0(top4_wins, "/", total_games, 
-                       " top 4 (", round(top4_wins/total_games*100, 1), "%)")
+    hovertext = paste0(
+      top4_wins, "/", total_games,
+      " top 4 (", round(top4_wins / total_games * 100, 1), "%)"
+    )
   ) %>%
     layout(
       xaxis = list(
         showgrid = FALSE,
         showticklabels = FALSE,
         zeroline = FALSE,
-        range = c(0, max + 1)  # use global max for consistent spacing
+        range = c(0, max + 1)
       ),
       yaxis = list(
         showgrid = FALSE,
@@ -437,5 +444,6 @@ ui <- fluidPage(
     )
   )
 )
+
 browsable(ui)
 save_html(layout, file = "C:/Users/Lenovo/Desktop/tft/tft_stats_vic.html")
