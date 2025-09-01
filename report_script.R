@@ -15,6 +15,7 @@ library(stringr)
 library(here)
 library(cli)
 library(glue)
+library(rcartocolor)
 
 ### PARAMETERS ###
 api_key = Sys.getenv("RIOT_API")
@@ -26,12 +27,17 @@ game_type = "RANKED_TFT"
 
 ### LOAD DATA ###
 source(here("get_data.R"))
-tft_overview_data <- tft_overview_data %>% filter(queueType == "RANKED_TFT")
+
+#filtering desired game type
+tft_overview_data <- tft_overview_data %>% 
+  filter(queueType == game_type)
 
 ### SUMMONER OVERVIEW ###
 value_box_summoner <- value_box(
   title = "Summoner",
-  value = paste0(summoner_data$gameName, "#", summoner_data$tagLine),
+  value = paste0(summoner_data$gameName, 
+                 "#", 
+                 summoner_data$tagLine),
   showcase = tags$img(src = paste0("http://ddragon.leagueoflegends.com/cdn/",
                                    latest_version,
                                    "/img/profileicon/",
@@ -43,37 +49,57 @@ value_box_summoner <- value_box(
 )
 
 ### SUMMONER GENERAL PLAYER STATS ###
-summoner_overview <- tft_overview_data %>% filter(queueType == game_type)
-
 value_box_player_stats <- value_box(
   title = "Status",
-  value = paste0(tft_overview_data$tier, " | ", tft_overview_data$rank),
+  value = paste0(tft_overview_data$tier, 
+                 " | ", 
+                 tft_overview_data$rank),
   showcase = tags$img(src = sprintf(
     "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-%s.png",
     tolower(tft_overview_data$tier)), 
     height = "100px"),
   theme = "gray",
-  p(paste0("League Points: ", tft_overview_data$leaguePoints)), 
-  p(paste0(tft_overview_data$wins, " Wins, ", tft_overview_data$losses, " Losses")),
-  p(paste0("Average Placement: ", mean(match_details$placement)))
+  p(paste0("League Points: ", 
+           tft_overview_data$leaguePoints)), 
+  p(paste0(tft_overview_data$wins, 
+           " Wins, ", 
+           tft_overview_data$losses, 
+           " Losses")),
+  p(paste0("Average Placement: ", 
+           mean(match_details$placement)))
 )
 
 ### MATCH OVERVIEW ###
-color_placement <- function(value) {
-  colors <- c("#00FF00", "#32CD32", "#7FFF00", "#FFD700", "#FFA500", "#FF4500", "#DC143C", "#8B0000")
-  index <- min(max(value, 1), 8) 
-  div(style = paste(
-    "display: inline-block;",
-    "padding: 5px 20px;",
-    "border-radius: 12px;",
-    "background-color:", colors[index], ";",
-    "color: white;",
-    "font-weight: bold;"),
-    value)}
+color_placement <- function(value, n_categories = 8) {
+  colors <- c("#00FF00", 
+              "#32CD32", 
+              "#7FFF00", 
+              "#FFD700", 
+              "#FFA500", 
+              "#FF4500", 
+              "#DC143C", 
+              "#8B0000")
+  index <- min(max(value, 1), 8)
+  div(
+    class = "placement-badge",
+    style = paste0("background-color: ", colors[index], ";"),
+    value
+  )}
 
-damage_color <- col_numeric(
-  palette = c("#FFCCCC", "#FF6666", "#CC0000", "#8B0000"), 
-  domain = range(match_details$total_damage_to_players, na.rm = TRUE))
+damage_badge <- function(value) {
+  damage_color <- col_numeric(
+    palette = c("#FFCCCC", 
+                "#FF6666", 
+                "#CC0000", 
+                "#8B0000"), 
+    domain = range(match_details$total_damage_to_players, 
+                   na.rm = TRUE))
+  color <- damage_color(value)  
+  div(
+    class = "damage-badge",
+    style = paste0("background-color: ", color, ";"),
+    value
+  )}
 
 overview_games <- match_details %>%
   mutate(game_datetime = as_datetime(game_datetime / 1000, tz = "UTC"),
@@ -91,9 +117,8 @@ overview_games_tbl <- overview_games %>%
                          align = "center"),
       players_eliminated = colDef("Players Eliminated"),
       total_damage_to_players = colDef("Total Damage", 
-                                       style = function(value) list(
-                                         background = damage_color(value),
-                                         color = "white")),
+                                       cell = function(value) damage_badge(value),
+                                       align = "center"),
       last_round = colDef("Last Round"),
       level = colDef("Level reached"), 
       gold_left = colDef("Gold left")
@@ -399,49 +424,31 @@ item_tbl <- reactable(
 
 ########################################## LAYOUT
 
-ui <- fluidPage(
-  style = "height: 100vh;",  # full viewport height
+ui <- layout_columns(
+  col_widths = c(3, 9),   # left 1/4, right 3/4
+  height = "100%",
   
-  layout_column_wrap(
-    width = NULL,
-    height = "100%",           # fixed height
-    style = css(grid_template_columns = "1fr 3fr"),  # left ~1/4, right ~3/4
-    
-    # --- Left column (1/4) with fixed stacked value boxes ---
-    layout_column_wrap(
-      width = "100%",
-      height = "100%",          # fill the left column
-      style = css(grid_template_rows = "1fr 1fr", gap = "10px"),
-      card(value_box_summoner),
-      card(value_box_player_stats)
-    ),
-    
-    # --- Right column (3/4) with navset ---
-    div(
-      style = "height: 100%; overflow-y: auto;",  # scrollable if content too tall
-      navset_tab(
-        nav_panel(
-          title = "Player History",
-          card(overview_games_tbl)
-        ),
-        nav_panel(
-          title = "Game Time",
-          card(time_plot)
-        ),
-        nav_panel(
-          title = "Trait Details",
-          card(trait_tbl)
-        ),
-        nav_panel(
-          title = "Unit Details",
-          card(unit_tbl)
-        ),
-        nav_panel(
-          title = "Item Details",
-          card(item_tbl)
-        )
-      )
-    )
+  # Left column: stacked value boxes
+  div(
+    style = "display: flex; flex-direction: column; gap: 10px; height: 100%;",
+    card(value_box_summoner),
+    card(value_box_player_stats)
+  ),
+  
+  # Right column: navset
+  navset_card_tab(
+    height = "100%",
+    full_screen = TRUE,
+    nav_panel(title = "Player History", card(overview_games_tbl)),
+    nav_panel(title = "Game Time", card(time_plot)),
+    nav_panel(title = "Trait Details", card(trait_tbl)),
+    nav_panel(title = "Unit Details", card(unit_tbl)),
+    nav_panel(title = "Item Details", card(item_tbl))
+  ),
+  
+  # SCSS reference
+  tags$head(
+    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
   )
 )
 
