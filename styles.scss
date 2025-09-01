@@ -1,15 +1,119 @@
 // GENERAL PAGE 
-$panel-bg: rgba(0, 0, 0, 0.7);
+$panel-bg: rgba(0, 0, 0, 0.5);
 $text-color: #ffffff;
 
 // Body with gradient background
 body {
-  background: linear-gradient(135deg, #0000ff, #800080, #000000);
+  background: linear-gradient(135deg, #0000ff, #000000);
   color: $text-color;
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
   min-height: 100vh;
+}
+
+.semi-transparent {
+  background-color: $panel-bg;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+  color: $text-color;
+}
+
+#dashboard-container {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  gap: 10px;
+  padding: 10px;   // small padding inside container
+  box-sizing: border-box;  // include padding in width/height
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 0 0 25%;
+  height: 100%;
+
+  > .card {
+    flex: 1;
+  }
+}
+
+.right-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  #dashboard-container {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .left-column,
+  .right-column {
+    flex: none;
+    width: 100%;
+    height: auto;
+  }
+
+  .left-column > .card {
+    flex: none;
+    width: 100%;
+    height: auto;
+  }
+}
+
+.transparent {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+// FILTER BOXES 
+.transparent-select {
+  background-color: rgba(0, 0, 0, 0);
+  color: rgba(255, 255, 255, 0.6); 
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  padding: 4px 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.reactable input,
+.reactable select {
+  background-color: rgba(0,0,0,0); 
+  color: rgba(255, 255, 255, 0.6);         
+  border: 1px solid rgba(255, 255, 255, 0.3);  
+  border-radius: 3px;
+  padding: 4px 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.reactable select option {
+  background: #000000;    
+  color: #0000ff;
+}
+
+// PILL BUTTON NAVIGATION
+.nav-pills .nav-link {
+  background-color: rgba(255,255,255,0.1);
+  color: #ffffff;
+  border-radius: 50px;                     
+  margin-right: 5px;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+.nav-pills .nav-link.active {
+  background-color: $panel-bg;            
+  color: #ffffff;
 }
 
 // BADGES
