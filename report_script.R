@@ -47,22 +47,22 @@ dropdown_function <- function(tableId) {
     )}}
 
 ### SUMMONER OVERVIEW ###
-value_box_summoner <- value_box(
-  title = "Summoner",
-  class = "transparent",
+value_box_summoner <- value_box( 
+  title = "Summoner", 
+  class = "transparent", 
   value = paste0(summoner_data$gameName, 
                  "#", 
-                 summoner_data$tagLine),
-  showcase = tags$img(src = paste0("http://ddragon.leagueoflegends.com/cdn/",
-                                   latest_version,
-                                   "/img/profileicon/",
-                                   summoner_profile$profileIconId,
-                                   ".png"),
-                      height = "70px"),
-  theme = "gray",
-  p(paste0("Region: ", region, " / ", sub_region))
-)
-
+                 summoner_data$tagLine), 
+  showcase = tags$img(
+    src = paste0("http://ddragon.leagueoflegends.com/cdn/", 
+                 latest_version, 
+                 "/img/profileicon/", 
+                 summoner_profile$profileIconId, 
+                 ".png"),
+    height = "70px"), 
+  theme = "gray", 
+  p(paste0("Region: ", region, " / ", sub_region)))
+  
 ### SUMMONER GENERAL PLAYER STATS ###
 value_box_player_stats <- value_box(
   title = "Status",
@@ -499,6 +499,7 @@ ui <- page(
     style = "display: flex; width: 100%; height: calc(100vh - 2rem); gap: 1rem;",  
     div(
       style = "flex: 0 0 25%; display: flex; flex-direction: column; gap: 1rem;",
+      class = "hide-on-small-screens",
       card(
         class = "semi-transparent",
         style = "flex: 1;",
@@ -513,6 +514,7 @@ ui <- page(
     # RIGHT COLUMN
     div(
       style = "flex: 0 0 75%; display: flex; flex-direction: column; overflow: auto;",
+      class = "bigger-on-small-screens",
       navset_pill(
         nav_panel("Player History", card(class = "transparent", overview_games_tbl)),
         nav_panel("Game Time",      card(class = "transparent", time_plot)),
