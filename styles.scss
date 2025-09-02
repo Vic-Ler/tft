@@ -61,8 +61,8 @@ html {
 
 // PILL BUTTON NAVIGATION
 .nav-pills .nav-link {
-  background-color: rgba(0, 0, 0, 0.2);
-  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  color: #ffffff !important;
   border-radius: 50px;                     
   margin-right: 5px;
   margin-bottom: 20px;
@@ -71,9 +71,10 @@ html {
   transition: box-shadow 0.3s ease; 
 }
 
-.nav-pills .nav-link.active {
-  background-color: $panel-bg;            
-  color: #ffffff;
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+  background-color: $panel-bg !important;  
+  color: #ffffff !important;
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.3); 
 }
 
@@ -101,3 +102,17 @@ $badge-radius: 12px;
   text-align: center;
 }
 
+// Hide value boxes on screens smaller than 768px
+@media (max-width: 768px) {
+  .hide-on-small-screens {
+    display: none !important;
+  }
+
+  .bigger-on-small-screens {
+    flex: 1 1 100% !important;  // fill full width
+  }
+
+  #dashboard-container {
+    gap: 0 !important;          // remove the flex gap for mobile
+  }
+}
